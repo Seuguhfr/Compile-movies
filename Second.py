@@ -72,6 +72,6 @@ def get_cover(video_path: str) -> str:
 directory = "C:\\Users\\Hugues\\Downloads\\PopcornTime - Downloads\\La.La.Land.2016.1080p.BluRay.DDP5.1.x265.10bit-GalaxyRG265[TGx]"
 video = find_video(directory)
 video_path = os.path.join(directory, video)
-print(get_cover(video_path))
+compile(video_path, get_subtitles(video_path, ["fra", "eng"]), get_cover(video_path), get_movie_name(video_path), directory)
 
 # iso_codes = [lang for lang in pycountry.languages if hasattr(lang, 'alpha_2')]    
