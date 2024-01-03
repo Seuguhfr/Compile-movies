@@ -24,7 +24,7 @@ def compile(video: str, subtitles: list, cover: str, name: str, directory: str) 
             "-i", subtitle_file,
             "-map", str(i),
             "-c:s", "mov_text",
-            "-metadata:s:" + str(i), 'title="' + title + '"',  # Corrected this line
+            f"-metadata:s:{i}", f'title="{title}"',
         ])
 
     ffmpeg_command.append(output_video)
