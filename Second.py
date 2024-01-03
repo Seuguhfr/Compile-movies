@@ -24,11 +24,12 @@ def compile(video: str, subtitles: list, cover: str, name: str, directory: str) 
             "-i", subtitle_file,
             "-map", str(i),
             "-c:s", "mov_text",
-            f"-metadata:s:{i}", f'title="{title}"',
+            "-metadata:s:" + str(i), 'title="' + title + '"',  # Corrected this line
         ])
 
     ffmpeg_command.append(output_video)
     subprocess.run(ffmpeg_command)
+
 
 def find_video(directory) -> str:
     for file in os.listdir(directory):
@@ -51,9 +52,9 @@ def get_subtitles(video_path: str, languages: list) -> list:
     subtitles: list = []
     file_name = os.path.splitext(os.path.basename(video_path))[0]
     for language in languages:
-        subtitle_file = f"{file_name}.{language.alpha2}.srt"
+        subtitle_file_path = os.path.join(os.path.dirname(video_path), f"{file_name}.{language.alpha2}.srt")
         language_name = get_language_name(language.alpha2)
-        subtitles.append((subtitle_file, language_name))
+        subtitles.append((subtitle_file_path, language_name))
     return subtitles
 
 def get_cover_url(video_path: str) -> str:
