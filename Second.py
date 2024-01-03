@@ -5,26 +5,27 @@ from subliminal import download_best_subtitles, save_subtitles, Video, scan_vide
 import subprocess
 import omdb
 
-def compile(video, subtitles, cover, name, directory) -> None:
-    english_subtitles, french_subtitles = subtitles
+def compile(video: str, subtitles: list, cover: str, name: str, directory: str) -> None:
     output_video = os.path.join(directory, name + ".mp4")
     ffmpeg_command = [
         "ffmpeg",
         "-i", video,
         "-i", cover,
-        "-i", english_subtitles,
-        "-i", french_subtitles,
         "-map", "1",
         "-map", "0",
-        "-map", "2",
-        "-map", "3",
         "-c", "copy",
-        "-c:s", "mov_text",
-        "-metadata:s:2", "title=\"English\"",
-        "-metadata:s:3", "title=\"Français\"",
         "-disposition:0", "attached_pic",
-        output_video
     ]
+    # Ajout des sous-titres
+    for i, (subtitle_file, title) in enumerate(subtitles, start=2):
+        ffmpeg_command.extend([
+            "-i", subtitle_file,
+            "-map", str(i),
+            "-c:s", "mov_text",
+            f"-metadata:s:{i}", f'title="{title}"',
+        ])
+
+    ffmpeg_command.append(output_video)
     subprocess.run(ffmpeg_command)
 
 def find_video(directory) -> str:
