@@ -5,6 +5,7 @@ from subliminal import download_best_subtitles, save_subtitles, Video, scan_vide
 import subprocess
 import pycountry
 import urllib.request
+import shutil
 import omdb
 
 def compile(video: str, subtitles: list, cover: str, name: str, directory: str) -> None:
@@ -30,6 +31,19 @@ def compile(video: str, subtitles: list, cover: str, name: str, directory: str) 
     ffmpeg_command.append(output_video)
     subprocess.run(ffmpeg_command)
 
+def compile_in_temp(video_path: str, subtitles_path: list, cover_path: str, name: str, directory: str) -> None:
+    files = [video_path, cover_path]
+    files.extend([subtitle_file for subtitle_file, _ in subtitles_path])
+    copy_files(files, "C:/temp")
+    os.chdir("C:/temp")
+    video = os.path.basename(video_path)
+    cover = os.path.basename(cover_path)
+    subtitles = [(os.path.basename(subtitle_file), title) for subtitle_file, title in subtitles_path]
+    compile(video, subtitles, cover, name, directory)
+
+def copy_files(file_list: list, directory: str) -> None:
+    for file in file_list:
+        shutil.copy(file, directory)
 
 def find_video(directory) -> str:
     for file in os.listdir(directory):
@@ -73,6 +87,6 @@ def get_cover(video_path: str) -> str:
 directory = "C:\\Users\\Hugues\\Downloads\\PopcornTime - Downloads\\La.La.Land.2016.1080p.BluRay.DDP5.1.x265.10bit-GalaxyRG265[TGx]"
 video = find_video(directory)
 video_path = os.path.join(directory, video)
-compile(video_path, get_subtitles(video_path, ["fra", "eng"]), get_cover(video_path), get_movie_name(video_path), directory)
+compile_in_temp(video_path, get_subtitles(video_path, ["fra", "eng"]), get_cover(video_path), get_movie_name(video_path), directory)
 
 # iso_codes = [lang for lang in pycountry.languages if hasattr(lang, 'alpha_2')]    
