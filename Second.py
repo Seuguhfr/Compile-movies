@@ -1,3 +1,4 @@
+
 import os
 from guessit import guessit
 from babelfish import Language
@@ -10,35 +11,28 @@ import omdb
 
 def compile(video: str, subtitles: list, cover: str, name: str, directory: str) -> None:
     output_video = os.path.join(directory, name + ".mp4")
-    ffmpeg_command = [
-        "ffmpeg",
-        "-i", video,
-        "-i", cover,
-        "-map", "1",
-        "-map", "0",
-        "-c", "copy",
-        "-disposition:0", "attached_pic",
-    ]
-    # Ajout des sous-titres
-    for i, (subtitle_file, title) in enumerate(subtitles, start=2):
-        ffmpeg_command.extend([
-            "-i", subtitle_file,
-            "-map", str(i),
-            "-c:s", "mov_text",
-            f"-metadata:s:{i}", f'title="{title}"',
-        ])
-
-    ffmpeg_command.append(output_video)
-    subprocess.run(ffmpeg_command)
+    ffmpeg_command = sum([
+        ["ffmpeg", "-i", video, "-i", cover],
+        [f"-i {subtitle_file}" for subtitle_file, *_ in subtitles],
+        ["-map 1", "-map 0"],
+        [f"-map {i}:s:0" for i in range(2, len(subtitles) + 2)],
+        ["-c copy"],
+        [f"-c:s:{i} mov_text" for i in range(len(subtitles))],
+        [f'-metadata:s:{i} language={lang}:title="{language}"' for i, (_, language, lang) in enumerate(subtitles)
+        ],
+        ["-metadata", f"title=\"{name}\"", "-disposition:0 attached_pic", f'"{output_video}"']
+    ], [])
+    print(" ".join(ffmpeg_command))
+    subprocess.run(" ".join(ffmpeg_command))
 
 def compile_in_temp(video_path: str, subtitles_path: list, cover_path: str, name: str, directory: str) -> None:
     files = [video_path, cover_path]
-    files.extend([subtitle_file for subtitle_file, _ in subtitles_path])
+    files.extend([subtitle_file for subtitle_file, *_ in subtitles_path])
     copy_files(files, "C:/temp")
     os.chdir("C:/temp")
     video = os.path.basename(video_path)
     cover = os.path.basename(cover_path)
-    subtitles = [(os.path.basename(subtitle_file), title) for subtitle_file, title in subtitles_path]
+    subtitles = [(os.path.basename(subtitle_file), language, lang) for subtitle_file, language, lang in subtitles_path]
     compile(video, subtitles, cover, name, directory)
 
 def copy_files(file_list: list, directory: str) -> None:
@@ -68,7 +62,8 @@ def get_subtitles(video_path: str, languages: list) -> list:
     for language in languages:
         subtitle_file_path = os.path.join(os.path.dirname(video_path), f"{file_name}.{language.alpha2}.srt")
         language_name = get_language_name(language.alpha2)
-        subtitles.append((subtitle_file_path, language_name))
+        language_iso_code = language.alpha2
+        subtitles.append((subtitle_file_path, language_name, language_iso_code))
     return subtitles
 
 def get_cover_url(video_path: str) -> str:
