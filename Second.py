@@ -8,8 +8,11 @@ import pycountry
 import urllib.request
 import shutil
 import omdb
+import tkinter as tk
+from tkinter import ttk
+from tkinter import filedialog
 
-def compile(video: str, subtitles: list, cover: str, name: str, directory: str) -> None:
+def compile_files(video: str, subtitles: list, cover: str, name: str, directory: str) -> None:
     output_video = os.path.join(directory, name + ".mp4")
     # ffmpeg -i movie.mp4 -i subtitle_en.srt -i subtitle_fr.srt -i image.jpg -map 0 -map 1 -map 2 -map 3 -c:v libx264 -preset slow -crf 22 -c:a copy -c:s mov_text -c:v:1 png -disposition:v:1 attached_pic -metadata:s:s:0 language=eng -metadata:s:s:1 language=fre final_output.mp4
     ffmpeg_command = sum([
@@ -25,7 +28,7 @@ def compile(video: str, subtitles: list, cover: str, name: str, directory: str) 
     print(" ".join(ffmpeg_command))
     subprocess.run(" ".join(ffmpeg_command))
 
-def compile_in_temp(video_path: str, subtitles_path: list, cover_path: str, name: str, directory: str) -> None:
+def compile(video_path: str, subtitles_path: list, cover_path: str, name: str, directory: str) -> None:
     files = [video_path, cover_path]
     files.extend([subtitle_file for subtitle_file, *_ in subtitles_path])
     copy_files(files, "C:/temp")
@@ -33,7 +36,7 @@ def compile_in_temp(video_path: str, subtitles_path: list, cover_path: str, name
     video = os.path.basename(video_path)
     cover = os.path.basename(cover_path)
     subtitles = [(os.path.basename(subtitle_file), language, lang) for subtitle_file, language, lang in subtitles_path]
-    compile(video, subtitles, cover, name, directory)
+    compile_files(video, subtitles, cover, name, directory)
 
 def copy_files(file_list: list, directory: str) -> None:
     for file in file_list:
@@ -78,10 +81,65 @@ def get_cover(video_path: str) -> str:
     urllib.request.urlretrieve(cover_url, cover_path)
     return cover_path
 
+def ask_video() -> str:
+    root = tk.Tk()
+    root.withdraw()
+    return filedialog.askopenfilename(filetypes=[("Fichiers vidéo", "*.mp4;*.mkv;*.avi"), ("Tous les fichiers", "*.*")])
+
+def ask_directories() -> list:
+    root = tk.Tk()
+    root.withdraw()
+    directories = []
+    while True:
+        directory = filedialog.askdirectory()
+        if directory:
+            directories.append(directory)
+        else:
+            break
+    return directories
+
+def compile_the_video(video_path):
+    directory = os.path.dirname(video_path)
+    video_name = get_movie_name(video_path)
+    subtitles = get_subtitles(video_path, ["fra", "eng"])
+    cover = get_cover(video_path)
+    compile(video_path, subtitles, cover, video_name, directory)
+
+def single_video():
+    video = ask_video()
+    compile_the_video(video)
+
+def multiple_folders():
+    directories = ask_directories()
+    for directory in directories:
+        video = find_video(directory)
+        video_path = os.path.join(directory, video)
+        compile_the_video(video_path)
+
+root = tk.Tk()
+
+# Create a style for the themed button
+style = ttk.Style()
+style.configure("TButton", padding=(20,10), font=('Helvetica', 12, 'bold'))  # Set the font for the button
+
+button1 = ttk.Button(root, text="Compiler une vidéo", command=single_video, width=30, style="TButton")
+button2 = ttk.Button(root, text="Compiler plusieurs films", command=multiple_folders, width=30, style="TButton")
+
+button1.pack(side=tk.LEFT, padx=20, pady=20)
+button2.pack(side=tk.RIGHT, padx=20, pady=20)
+
+root.mainloop()
+
+"""
+
 # Test
+print(ask_directories())
+input()
 directory = "C:/Users/Hugues/Downloads/PopcornTime - Downloads/Dream Scenario (2023) [1080p] [WEBRip] [5.1] [YTS.MX]"
 video = find_video(directory)
 video_path = os.path.join(directory, video)
-compile_in_temp(video_path, get_subtitles(video_path, ["fra", "eng"]), get_cover(video_path), get_movie_name(video_path), directory)
+compile(video_path, get_subtitles(video_path, ["fra", "eng"]), get_cover(video_path), get_movie_name(video_path), directory)
 
 # iso_codes = [lang for lang in pycountry.languages if hasattr(lang, 'alpha_2')]
+
+"""
