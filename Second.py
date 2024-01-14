@@ -11,16 +11,16 @@ import omdb
 
 def compile(video: str, subtitles: list, cover: str, name: str, directory: str) -> None:
     output_video = os.path.join(directory, name + ".mp4")
+    # ffmpeg -i movie.mp4 -i subtitle_en.srt -i subtitle_fr.srt -i image.jpg -map 0 -map 1 -map 2 -map 3 -c:v libx264 -preset slow -crf 22 -c:a copy -c:s mov_text -c:v:1 png -disposition:v:1 attached_pic -metadata:s:s:0 language=eng -metadata:s:s:1 language=fre final_output.mp4
     ffmpeg_command = sum([
-        ["ffmpeg", "-i", video, "-i", cover],
+        ["ffmpeg", "-i", video],
         [f"-i {subtitle_file}" for subtitle_file, *_ in subtitles],
-        ["-map 1", "-map 0"],
-        [f"-map {i}:s:0" for i in range(2, len(subtitles) + 2)],
+        ["-i", cover],
+        [f"-map {i}" for i in range(len(subtitles) + 2)],
         ["-c copy"],
-        [f"-c:s:{i} mov_text" for i in range(len(subtitles))],
-        [f'-metadata:s:{i} language={lang}:title="{language}"' for i, (_, language, lang) in enumerate(subtitles)
-        ],
-        ["-metadata", f"title=\"{name}\"", "-disposition:0 attached_pic", f'"{output_video}"']
+        ["-c:s", "mov_text", "-c:v:1", "png", "-disposition:v:1", "attached_pic"],
+        [f'-metadata:s:{i} language={lang} -metadata:s:{i} title="{language}"' for i, (_, language, lang) in enumerate(subtitles)],
+        ["-metadata", f'title="{name}"', f'"{output_video}"']
     ], [])
     print(" ".join(ffmpeg_command))
     subprocess.run(" ".join(ffmpeg_command))
@@ -79,9 +79,9 @@ def get_cover(video_path: str) -> str:
     return cover_path
 
 # Test
-directory = "C:\\Users\\Hugues\\Downloads\\PopcornTime - Downloads\\La.La.Land.2016.1080p.BluRay.DDP5.1.x265.10bit-GalaxyRG265[TGx]"
+directory = "C:/Users/Hugues/Downloads/PopcornTime - Downloads/Dream Scenario (2023) [1080p] [WEBRip] [5.1] [YTS.MX]"
 video = find_video(directory)
 video_path = os.path.join(directory, video)
 compile_in_temp(video_path, get_subtitles(video_path, ["fra", "eng"]), get_cover(video_path), get_movie_name(video_path), directory)
 
-# iso_codes = [lang for lang in pycountry.languages if hasattr(lang, 'alpha_2')]    
+# iso_codes = [lang for lang in pycountry.languages if hasattr(lang, 'alpha_2')]
