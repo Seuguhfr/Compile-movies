@@ -2,7 +2,7 @@
 import os
 from guessit import guessit
 from babelfish import Language
-from subliminal import download_best_subtitles, save_subtitles, Video, scan_video, scan_videos, download_subtitles
+from subliminal import download_best_subtitles, save_subtitles, Video, scan_videos, download_subtitles
 import subprocess
 import pycountry
 import urllib.request
@@ -22,7 +22,7 @@ def compile_files(video: str, subtitles: list, cover: str, name: str, directory:
         [f"-map {i}" for i in range(len(subtitles) + 2)],
         ["-c copy"],
         ["-c:s", "mov_text", "-c:v:1", "png", "-disposition:v:1", "attached_pic"],
-        [f'-metadata:s:{i} language={lang} -metadata:s:{i} title="{language}"' for i, (_, language, lang) in enumerate(subtitles)],
+        [f'-metadata:s:s:{i} language={lang} -metadata:s:s:{i} title="{language}"' for i, (_, language, lang) in enumerate(subtitles)],
         ["-metadata", f'title="{name}"', f'"{output_video}"']
     ], [])
     print(" ".join(ffmpeg_command))
@@ -49,25 +49,40 @@ def find_video(directory) -> str:
 
 def get_movie_name(video_path) -> str:
     movie_info = guessit(video_path)
+    print(f'Movie found : {movie_info["title"]}')
     return movie_info["title"]
     
 def get_language_name(iso_code):
     language = pycountry.languages.get(alpha_2=iso_code)
     return language.name if language else None
 
-def get_subtitles(video_path: str, languages: list) -> list:
-    languages: set = {Language(language) for language in languages}
-    video = scan_video(video_path)
+def get_subtitles(video_path: str, languages_list: list, n=0) -> list:
+    languages: set = {Language(language) for language in languages_list}
+    print(f"video_path : {os.path.dirname(video_path)}")
+    video = scan_videos(os.path.dirname(video_path))[0]
+    print(f"Video found : {video}")
+    print(f"Languages : {languages}")
     subtitles = download_best_subtitles([video], languages)
+    print(f"Subtitles found : {subtitles}")
+    print(f"Subtitles found : {subtitles[video]}")
+    if not subtitles[video]:
+        if n == 3:
+            print("Subtitles not found")
+            return []
+        print("Subtitles not found")
+        return get_subtitles(video_path, languages_list, n+1)
     save_subtitles(video, subtitles[video])
-    subtitles: list = []
+    print(f"n : {n}")
+    print(os.listdir())
+    subtitles_list: list = []
     file_name = os.path.splitext(os.path.basename(video_path))[0]
     for language in languages:
         subtitle_file_path = os.path.join(os.path.dirname(video_path), f"{file_name}.{language.alpha2}.srt")
         language_name = get_language_name(language.alpha2)
         language_iso_code = language.alpha2
-        subtitles.append((subtitle_file_path, language_name, language_iso_code))
-    return subtitles
+        subtitles_list.append((subtitle_file_path, language_name, language_iso_code))
+    print(f"Subtitles found : {subtitles_list}")
+    return subtitles_list
 
 def get_cover_url(video_path: str) -> str:
     omdb.set_default('apikey', '368c601d')
@@ -102,6 +117,8 @@ def compile_the_video(video_path):
     directory = os.path.dirname(video_path)
     video_name = get_movie_name(video_path)
     subtitles = get_subtitles(video_path, ["fra", "eng"])
+    if not subtitles:
+        return
     cover = get_cover(video_path)
     compile(video_path, subtitles, cover, video_name, directory)
 
